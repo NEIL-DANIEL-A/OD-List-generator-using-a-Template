@@ -43,6 +43,7 @@ export default function CalibrationPage() {
   const [zoom, setZoom] = useState(1.0);
   const [generating, setGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string>("");
+  const [statusMsg, setStatusMsg] = useState<string>("");
   const [dragging, setDragging] = useState(false);
   const [resizing, setResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -211,6 +212,7 @@ export default function CalibrationPage() {
 
   async function generatePreview() {
     setGenerating(true);
+    setStatusMsg("Generating PDF...");
     try {
       const body: Record<string, unknown> = { participants, rowCount: config.rowsPerPage, templateConfig: config };
       if (templateImage) {
@@ -235,8 +237,10 @@ export default function CalibrationPage() {
       if (iframeRef.current) {
         iframeRef.current.src = url;
       }
+      setStatusMsg("PDF ready — scroll down to preview");
     } catch (err) {
       console.error(err);
+      setStatusMsg("Failed to generate PDF");
     } finally {
       setGenerating(false);
     }
@@ -255,12 +259,12 @@ export default function CalibrationPage() {
   return (
     <div className="h-screen flex overflow-hidden bg-background p-3">
       {/* Left Panel — Controls (fixed, not scrollable) */}
-      <div className="w-[420px] min-w-[420px] border-r overflow-hidden p-5 space-y-4 flex flex-col">
-        <h1 className="text-lg font-bold tracking-tight">Template Calibration</h1>
+      <div className="w-[420px] min-w-[420px] border-r overflow-hidden p-5 space-y-4 flex flex-col text-sm">
+        <h1 className="text-xl font-bold tracking-tight">Automated OD List Generation</h1>
 
         {/* Template Upload */}
         <div className="space-y-1">
-          <Label className="text-xs font-semibold uppercase text-muted-foreground">Template Image</Label>
+          <Label className="text-sm font-semibold uppercase text-muted-foreground">Template Image</Label>
           <div
             {...getRootProps()}
             className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-3 transition-colors ${
@@ -271,14 +275,14 @@ export default function CalibrationPage() {
             {templateFileName ? (
               <p className="text-xs font-medium">{templateFileName}</p>
             ) : (
-              <p className="text-xs text-muted-foreground">Drop template or click</p>
+              <p className="text-sm text-muted-foreground">Drop template or click</p>
             )}
           </div>
         </div>
 
         {/* Excel Upload */}
         <div className="space-y-1">
-          <Label className="text-xs font-semibold uppercase text-muted-foreground">Excel Data</Label>
+          <Label className="text-sm font-semibold uppercase text-muted-foreground">Excel Data</Label>
           <div
             {...getExcelRootProps()}
             className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-3 transition-colors ${
@@ -297,14 +301,14 @@ export default function CalibrationPage() {
                 </Button>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">Drop Excel or click</p>
+              <p className="text-sm text-muted-foreground">Drop Excel or click</p>
             )}
           </div>
         </div>
 
         {/* Position & Size */}
         <div className="space-y-2">
-          <Label className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1"><Move className="h-3 w-3" /> Position & Size</Label>
+          <Label className="text-sm font-semibold uppercase text-muted-foreground flex items-center gap-1"><Move className="h-3 w-3" /> Position & Size</Label>
           {[
             { label: "X", key: "tableX" as const, max: A4_WIDTH_PX },
             { label: "Y", key: "tableY" as const, max: A4_HEIGHT_PX },
@@ -312,7 +316,7 @@ export default function CalibrationPage() {
             { label: "Row Height", key: "rowHeight" as const, max: 80 },
           ].map(({ label, key, max }) => (
             <div key={key} className="flex items-center gap-2">
-              <Label className="text-xs w-16">{label}</Label>
+              <Label className="text-sm w-16">{label}</Label>
               <input
                 type="range"
                 min={0}
@@ -327,28 +331,28 @@ export default function CalibrationPage() {
                 max={max}
                 value={config[key]}
                 onChange={(e) => setConfig((prev) => ({ ...prev, [key]: Number(e.target.value) }))}
-                className="w-16 h-7 text-xs font-mono"
+                className="w-20 h-8 text-sm font-mono"
               />
             </div>
           ))}
           <div className="flex items-center gap-2">
-            <Label className="text-xs w-16">Rows</Label>
+            <Label className="text-sm w-16">Rows</Label>
             <Input
               type="number"
               min={1}
               value={config.rowsPerPage}
               onChange={(e) => setConfig((prev) => ({ ...prev, rowsPerPage: Math.max(1, Number(e.target.value) || 1) }))}
-              className="w-16 h-7 text-xs"
+              className="w-20 h-8 text-sm"
             />
           </div>
         </div>
 
         {/* Column Widths */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold uppercase text-muted-foreground">Column Widths (%)</Label>
+          <Label className="text-sm font-semibold uppercase text-muted-foreground">Column Widths (%)</Label>
           {COLUMN_HEADERS.map((h, i) => (
             <div key={h} className="flex items-center gap-1.5">
-              <Label className="text-[11px] w-20 truncate">{h}</Label>
+              <Label className="text-sm w-20 truncate">{h}</Label>
               <input
                 type="range"
                 min={2}
@@ -371,7 +375,7 @@ export default function CalibrationPage() {
                   nw[i] = Number(e.target.value);
                   setConfig((prev) => ({ ...prev, columnWidths: nw }));
                 }}
-                className="w-14 h-7 text-[11px] font-mono"
+                className="w-16 h-8 text-sm font-mono"
               />
             </div>
           ))}
@@ -396,9 +400,20 @@ export default function CalibrationPage() {
             </Button>
           </div>
         </div>
-      </div>
 
-      {/* Right Panel — Canvas + PDF Preview below */}
+        {/* Status Message */}
+        {statusMsg && (
+          <div className={`mt-auto pt-2 rounded-lg px-3 py-2 text-xs font-medium ${
+            statusMsg.includes("Failed")
+              ? "bg-red-100 text-red-700 border border-red-200"
+              : statusMsg.includes("Generating")
+                ? "bg-blue-100 text-blue-700 border border-blue-200"
+                : "bg-green-100 text-green-700 border border-green-200"
+          }`}>
+            <p className="text-center">{statusMsg}</p>
+          </div>
+        )}
+      </div>
       <div className="flex-1 min-w-0 overflow-y-auto p-4 space-y-4">
         {/* Visual Canvas */}
         <div>
