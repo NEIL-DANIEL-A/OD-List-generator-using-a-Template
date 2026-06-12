@@ -10,6 +10,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -25,7 +27,10 @@ import {
   RefreshCw,
   Trash2,
   Loader2,
+  Image,
+  Upload as UploadIcon,
 } from "lucide-react";
+import type { TemplateConfig } from "@/lib/types";
 
 interface Event {
   id: string;
@@ -51,6 +56,10 @@ export default function AttendancePage() {
   const [parsing, setParsing] = useState(false);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [useCustomTemplate, setUseCustomTemplate] = useState(false);
+  const [templateImage, setTemplateImage] = useState<string | null>(null);
+  const [templateFileName, setTemplateFileName] = useState<string>("");
+  const [templateConfig, setTemplateConfig] = useState<TemplateConfig>({ tableX: 40, tableY: 200, tableWidth: 714, rowHeight: 30, columnWidths: [6, 18, 42, 14, 20], rowsPerPage: 17 });
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -116,6 +125,54 @@ export default function AttendancePage() {
     maxSize: 10 * 1024 * 1024,
   });
 
+  const onTemplateDrop = useCallback((accepted: File[]) => {
+    const file = accepted[0];
+    if (!file) return;
+    setTemplateFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = () => setTemplateImage(reader.result as string);
+    reader.readAsDataURL(file);
+  }, []);
+
+  const {
+    getRootProps: getTemplateRootProps,
+    getInputProps: getTemplateInputProps,
+    isDragActive: isTemplateDragActive,
+  } = useDropzone({
+    onDrop: onTemplateDrop,
+    accept: { "image/*": [".png", ".jpg", ".jpeg"] },
+    maxFiles: 1,
+    multiple: false,
+  });
+
+  function loadTemplateConfig() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result as string);
+          if (parsed.tableX !== undefined && parsed.tableY !== undefined && parsed.tableWidth !== undefined) {
+            setTemplateConfig(parsed);
+          }
+        } catch { /* ignore */ }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
+  function clearTemplate() {
+    setTemplateImage(null);
+    setTemplateFileName("");
+    setUseCustomTemplate(false);
+    setTemplateConfig({ tableX: 40, tableY: 200, tableWidth: 714, rowHeight: 30, columnWidths: [6, 18, 42, 14, 20], rowsPerPage: 17 });
+  }
+
   async function handleGenerate() {
     if (!uploadedFile) return;
 
@@ -129,6 +186,14 @@ export default function AttendancePage() {
       formData.append("file", uploadedFile);
       if (selectedEvent) {
         formData.append("eventName", selectedEvent.name);
+      }
+      if (useCustomTemplate && templateImage) {
+        const res = await fetch(templateImage);
+        const blob = await res.blob();
+        const ext = templateFileName.split(".").pop() || "png";
+        const file = new File([blob], `template.${ext}`, { type: blob.type });
+        formData.append("templateImage", file);
+        formData.append("templateConfig", JSON.stringify(templateConfig));
       }
 
       const res = await fetch("/api/generate-pdf", {
@@ -223,6 +288,112 @@ export default function AttendancePage() {
                   ))}
                 </SelectContent>
               </Select>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Image className="h-4 w-4" />
+                Custom Template (Optional)
+              </CardTitle>
+              <CardDescription>
+                Upload a template image and overlay the table on it
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useCustomTemplate}
+                    onChange={(e) => {
+                      setUseCustomTemplate(e.target.checked);
+                      if (!e.target.checked) clearTemplate();
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 accent-primary"
+                  />
+                  <span className="text-sm">Enable custom template</span>
+                </label>
+              </div>
+
+              {useCustomTemplate && (
+                <>
+                  <div
+                    {...getTemplateRootProps()}
+                    className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 transition-colors ${
+                      isTemplateDragActive
+                        ? "border-primary bg-primary/5"
+                        : "border-muted-foreground/25 hover:border-primary/50"
+                    }`}
+                  >
+                    <input {...getTemplateInputProps()} />
+                    {templateFileName ? (
+                      <div className="text-center">
+                        <p className="text-sm font-medium">{templateFileName}</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            clearTemplate();
+                          }}
+                        >
+                          <Trash2 className="mr-1 h-3 w-3" />
+                          Remove
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <UploadIcon className="mx-auto mb-1 h-6 w-6 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">
+                          Drop template image or click to upload
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button variant="outline" size="sm" className="w-full" onClick={loadTemplateConfig}>
+                    <UploadIcon className="mr-1 h-3 w-3" />
+                    Load Calibration Config (.json)
+                  </Button>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Label className="text-xs">X</Label>
+                      <Input
+                        type="number"
+                        value={templateConfig.tableX}
+                        onChange={(e) => setTemplateConfig((c) => ({ ...c, tableX: Number(e.target.value) }))}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Y</Label>
+                      <Input
+                        type="number"
+                        value={templateConfig.tableY}
+                        onChange={(e) => setTemplateConfig((c) => ({ ...c, tableY: Number(e.target.value) }))}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Width</Label>
+                      <Input
+                        type="number"
+                        value={templateConfig.tableWidth}
+                        onChange={(e) => setTemplateConfig((c) => ({ ...c, tableWidth: Number(e.target.value) }))}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    Use the <a href="/admin/calibration" className="underline text-primary">Calibration Tool</a> to get precise coordinates
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 

@@ -32,4 +32,13 @@ export interface GeneratedPdf {
   participantCount: number;
 }
 
+export interface TemplateConfig {
+  tableX: number;
+  tableY: number;
+  tableWidth: number;
+  rowHeight: number;
+  columnWidths: number[];
+  rowsPerPage: number;
+}
+
 

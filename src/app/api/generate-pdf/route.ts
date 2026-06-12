@@ -4,12 +4,15 @@ import { generateAttendancePdf } from "@/lib/pdf-generator";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { v4 as uuidv4 } from "uuid";
+import type { TemplateConfig } from "@/lib/types";
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const eventName = formData.get("eventName") as string | null;
+    const templateImageFile = formData.get("templateImage") as File | null;
+    const templateConfigStr = formData.get("templateConfig") as string | null;
 
     if (!file) {
       return NextResponse.json(
@@ -32,7 +35,18 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const participants = parseExcelFile(buffer);
 
-    const pdfBytes = await generateAttendancePdf(participants);
+    let templateImage: string | undefined;
+    let templateConfig: TemplateConfig | undefined;
+
+    if (templateImageFile && templateConfigStr) {
+      const imgBuffer = Buffer.from(await templateImageFile.arrayBuffer());
+      const ext = templateImageFile.name.split(".").pop()?.toLowerCase() || "png";
+      const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`;
+      templateImage = `data:${mime};base64,${imgBuffer.toString("base64")}`;
+      templateConfig = JSON.parse(templateConfigStr);
+    }
+
+    const pdfBytes = await generateAttendancePdf(participants, templateImage, templateConfig, templateConfig?.rowsPerPage);
 
     const uploadsDir = join(process.cwd(), "uploads", "generated-pdfs");
     await mkdir(uploadsDir, { recursive: true });

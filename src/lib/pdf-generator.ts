@@ -1,8 +1,8 @@
 import puppeteer from "puppeteer-core";
 import { readFile } from "fs/promises";
 import { join } from "path";
-import { buildAttendanceHtml, type TemplateLogos } from "./html-template";
-import type { Participant } from "./types";
+import { buildAttendanceHtml, buildCustomTemplateHtml, type TemplateLogos } from "./html-template";
+import type { Participant, TemplateConfig } from "./types";
 
 const CHROME_PATH =
   process.env.CHROME_PATH ||
@@ -28,10 +28,15 @@ async function loadLogos(): Promise<TemplateLogos> {
 }
 
 export async function generateAttendancePdf(
-  participants: Participant[]
+  participants: Participant[],
+  templateImage?: string,
+  templateConfig?: TemplateConfig,
+  rowCount?: number
 ): Promise<Uint8Array> {
-  const totalPages = Math.ceil(participants.length / ROWS_PER_PAGE) || 1;
+  const rowsPerPage = (templateConfig?.rowsPerPage && templateConfig.rowsPerPage > 0) ? templateConfig.rowsPerPage : (rowCount || ROWS_PER_PAGE);
+  const totalPages = Math.ceil(participants.length / rowsPerPage) || 1;
   const logos = await loadLogos();
+  const useCustomTemplate = templateImage && templateConfig;
 
   const browser = await puppeteer.launch({
     executablePath: CHROME_PATH,
@@ -44,10 +49,14 @@ export async function generateAttendancePdf(
 
     const allHtmlPages: string[] = [];
     for (let i = 0; i < totalPages; i++) {
-      const start = i * ROWS_PER_PAGE;
-      const end = Math.min(start + ROWS_PER_PAGE, participants.length);
+      const start = i * rowsPerPage;
+      const end = Math.min(start + rowsPerPage, participants.length);
       const pageParticipants = participants.slice(start, end);
-      allHtmlPages.push(buildAttendanceHtml(pageParticipants, logos));
+      if (useCustomTemplate) {
+        allHtmlPages.push(buildCustomTemplateHtml(pageParticipants, templateImage, templateConfig, rowsPerPage, logos.watermark));
+      } else {
+        allHtmlPages.push(buildAttendanceHtml(pageParticipants, logos));
+      }
     }
 
     const combinedHtml = `<!DOCTYPE html>
