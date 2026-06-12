@@ -235,7 +235,7 @@ export default function CalibrationPage() {
     if (!pdfUrl) return;
     const a = document.createElement("a");
     a.href = pdfUrl;
-    a.download = "calibration-preview.pdf";
+    a.download = "OD-List.pdf";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

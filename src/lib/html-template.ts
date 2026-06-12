@@ -4,16 +4,16 @@ const ROWS_PER_PAGE = 17;
 
 function buildTableRows(participants: Participant[]): string {
   let rows = "";
-  for (let i = 0; i < ROWS_PER_PAGE; i++) {
+  for (let i = 0; i < participants.length; i++) {
     const p = participants[i];
     const bg = i % 2 === 0 ? "#f8f9fa" : "#ffffff";
     rows += `
       <tr style="background:${bg};">
-        <td style="width:6%; text-align:center;">${p ? p.sno : ""}</td>
-        <td style="width:18%; text-align:center;">${p ? p.rollNumber : ""}</td>
-        <td style="width:42%; text-align:left; padding-left:8px;">${p ? p.name : ""}</td>
-        <td style="width:14%; text-align:center;">${p ? p.year : ""}</td>
-        <td style="width:20%; text-align:center;">${p ? p.department : ""}</td>
+        <td style="width:6%; text-align:center;">${p.sno}</td>
+        <td style="width:18%; text-align:center;">${p.rollNumber}</td>
+        <td style="width:42%; text-align:left; padding-left:8px;">${p.name}</td>
+        <td style="width:14%; text-align:center;">${p.year}</td>
+        <td style="width:20%; text-align:center;">${p.department}</td>
       </tr>`;
   }
   return rows;
@@ -270,17 +270,17 @@ export function buildAttendanceHtml(
 </html>`;
 }
 
-function buildCustomTableRows(participants: Participant[], colWidths: number[], rowCount: number): string {
+function buildCustomTableRows(participants: Participant[], colWidths: number[]): string {
   let rows = "";
-  for (let i = 0; i < rowCount; i++) {
+  for (let i = 0; i < participants.length; i++) {
     const p = participants[i];
     rows += `
       <tr>
-        <td style="width:${colWidths[0]}%; text-align:center;">${p ? p.sno : ""}</td>
-        <td style="width:${colWidths[1]}%; text-align:center;">${p ? p.rollNumber : ""}</td>
-        <td style="width:${colWidths[2]}%; text-align:left; padding-left:8px;">${p ? p.name : ""}</td>
-        <td style="width:${colWidths[3]}%; text-align:center;">${p ? p.year : ""}</td>
-        <td style="width:${colWidths[4]}%; text-align:center;">${p ? p.department : ""}</td>
+        <td style="width:${colWidths[0]}%; text-align:center;">${p.sno}</td>
+        <td style="width:${colWidths[1]}%; text-align:center;">${p.rollNumber}</td>
+        <td style="width:${colWidths[2]}%; text-align:left; padding-left:8px;">${p.name}</td>
+        <td style="width:${colWidths[3]}%; text-align:center;">${p.year}</td>
+        <td style="width:${colWidths[4]}%; text-align:center;">${p.department}</td>
       </tr>`;
   }
   return rows;
@@ -412,7 +412,7 @@ export function buildCustomTemplateHtml(
         </tr>
       </thead>
       <tbody>
-        ${buildCustomTableRows(participants, config.columnWidths, rowCount)}
+        ${buildCustomTableRows(participants, config.columnWidths)}
       </tbody>
     </table>
   </div>
