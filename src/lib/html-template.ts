@@ -20,12 +20,8 @@ function buildTableRows(participants: Participant[]): string {
 }
 
 export interface TemplateLogos {
-  headerLeft: string;
-  headerRight: string;
-  footerLeft: string;
-  footerRight: string;
   watermark: string;
-  defaultTemplate?: string;
+  defaultTemplate: string;
 }
 
 export function buildAttendanceHtml(

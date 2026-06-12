@@ -447,13 +447,13 @@ export default function CalibrationPage() {
                 style={{ left: config.tableX * zoom, top: config.tableY * zoom, width: config.tableWidth * zoom, zIndex: 10 }}
                 onMouseDown={handleDragStart}
               >
-                <div className="flex bg-blue-100/80 border border-blue-400/60 text-[10px] font-semibold" style={{ height: config.rowHeight }}>
+                <div className="flex bg-blue-100/80 border border-blue-400/60 text-[10px] font-semibold" style={{ height: config.rowHeight * zoom }}>
                   {COLUMN_HEADERS.map((h, i) => (
                     <div key={h} className="px-1 flex items-center justify-center border-r border-blue-400/40 last:border-r-0" style={{ width: `${config.columnWidths[i]}%` }}>{h}</div>
                   ))}
                 </div>
                 {Array.from({ length: config.rowsPerPage }, (_, r) => (
-                  <div key={r} className={`flex border border-blue-400/40 border-t-0 text-[9px] ${r % 2 === 0 ? "bg-blue-50/60" : "bg-white/60"}`} style={{ height: config.rowHeight }}>
+                  <div key={r} className={`flex border border-blue-400/40 border-t-0 text-[9px] ${r % 2 === 0 ? "bg-blue-50/60" : "bg-white/60"}`} style={{ height: config.rowHeight * zoom }}>
                     {config.columnWidths.map((w, ci) => (
                       <div key={ci} className="px-1 flex items-center justify-center border-r border-blue-400/30 last:border-r-0 truncate" style={{ width: `${w}%` }}>{ci === 0 ? r + 1 : ""}</div>
                     ))}

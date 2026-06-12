@@ -27,7 +27,7 @@ async function loadLogos(): Promise<TemplateLogos> {
     loadLogoDataUri("sbg_logo.svg"),
     loadPngDataUri("attendance_template.png"),
   ]);
-  return { headerLeft: "", headerRight: "", footerLeft: "", footerRight: "", watermark, defaultTemplate };
+  return { watermark, defaultTemplate };
 }
 
 export async function generateAttendancePdf(
