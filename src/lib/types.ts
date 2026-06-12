@@ -6,32 +6,6 @@ export interface Participant {
   year: string;
 }
 
-export interface Event {
-  id: string;
-  name: string;
-  date: Date;
-  venue: string | null;
-  createdAt: Date;
-}
-
-export interface UploadedFile {
-  id: string;
-  filename: string;
-  filepath: string;
-  uploadedAt: Date;
-  eventId: string;
-}
-
-export interface GeneratedPdf {
-  id: string;
-  filename: string;
-  filepath: string;
-  eventId: string;
-  eventName: string;
-  createdAt: Date;
-  participantCount: number;
-}
-
 export interface TemplateConfig {
   tableX: number;
   tableY: number;
@@ -40,5 +14,3 @@ export interface TemplateConfig {
   columnWidths: number[];
   rowsPerPage: number;
 }
-
-

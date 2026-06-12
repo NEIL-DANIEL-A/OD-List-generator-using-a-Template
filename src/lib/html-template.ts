@@ -342,7 +342,7 @@ export function buildCustomTemplateHtml(
     left: 0;
     top: calc(${tableYmm}mm - 2mm);
     width: 210mm;
-    height: calc(${stripHeightMm}mm + 2mm);
+    height: calc(${stripHeightMm}mm + 3mm);
     background: white;
     z-index: 1;
   }
