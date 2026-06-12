@@ -30,13 +30,12 @@ body {
   color: var(--color-foreground);
 }
 
-input[type="number"] {
-  direction: rtl;
-  text-align: left;
-}
-
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: auto;
+  -webkit-appearance: none;
   margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
 }

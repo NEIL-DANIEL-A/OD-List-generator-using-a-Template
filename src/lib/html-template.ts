@@ -25,12 +25,22 @@ export interface TemplateLogos {
   footerLeft: string;
   footerRight: string;
   watermark: string;
+  defaultTemplate?: string;
 }
 
 export function buildAttendanceHtml(
   participants: Participant[],
-  logos: TemplateLogos
+  logos: TemplateLogos,
+  config?: TemplateConfig
 ): string {
+  const PX_TO_MM = 0.264583;
+  const tableXmm = config ? (config.tableX * PX_TO_MM).toFixed(2) : "16";
+  const tableYmm = config ? (config.tableY * PX_TO_MM).toFixed(2) : "52";
+  const tableWidthMm = config ? (config.tableWidth * PX_TO_MM).toFixed(2) : "189";
+  const rowHeightMm = config ? (config.rowHeight * PX_TO_MM).toFixed(2) : "8";
+  const rowsPerPage = config?.rowsPerPage || 17;
+  const stripHeightMm = ((rowsPerPage + 1) * (config?.rowHeight || 30) * PX_TO_MM).toFixed(2);
+  const colW = config?.columnWidths || [6, 18, 42, 14, 20];
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -49,14 +59,25 @@ export function buildAttendanceHtml(
     color: #000;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    overflow: hidden;
   }
   .page {
     width: 210mm;
     height: 297mm;
     padding: 0;
     position: relative;
-    display: flex;
-    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ---- TEMPLATE BACKGROUND ---- */
+  .template-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    z-index: 0;
   }
 
   /* ---- WATERMARK ---- */
@@ -69,7 +90,7 @@ export function buildAttendanceHtml(
     height: 350px;
     opacity: 0.12;
     pointer-events: none;
-    z-index: 0;
+    z-index: 3;
   }
   .watermark img {
     width: 100%;
@@ -77,192 +98,80 @@ export function buildAttendanceHtml(
     object-fit: contain;
   }
 
-  /* ---- HEADER ---- */
-  .header {
-    background: white;
-    padding: 16px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 100px;
-  }
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .logo-r {
-    width: 70px;
-    height: 70px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .logo-r img {
-    width: 70px;
-    height: 70px;
-    object-fit: contain;
-  }
-  .header-title {
-    text-align: center;
-    flex: 1;
-  }
-  .header-title h1 {
-    font-size: 27px;
-    font-weight: 800;
-    color: #6f52df;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-  .header-title h2 {
-    font-size: 20px;
-    font-weight: 700;
-    color: #000000ff;
-    margin-top: 2px;
-  }
-  .logo-aws {
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .logo-aws img {
-    width: 50px;
-    height: 50px;
-    object-fit: contain;
-  }
-
-  /* ---- DIVIDER ---- */
-  .divider {
-    height: 3px;
-    background: #5b2d8e;
-    width: 100%;
-  }
-
-  /* ---- PARTICIPANTS HEADING ---- */
-  .participants-heading {
-    text-align: center;
-    padding: 8px 0 4px 0;
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 2px;
-  }
-
   /* ---- TABLE ---- */
-  .table-wrapper {
-    flex: 1;
-    padding: 0 16px;
+  .table-strip {
+    position: absolute;
+    left: 0;
+    top: calc(${tableYmm}mm - 2mm);
+    width: 210mm;
+    height: calc(${stripHeightMm}mm + 3mm);
+    background: white;
+    z-index: 1;
   }
-  table {
-    margin-left: auto;
-    margin-right: auto;
-    width: 95%;
+  .table-overlay {
+    position: absolute;
+    left: ${tableXmm}mm;
+    top: ${tableYmm}mm;
+    width: ${tableWidthMm}mm;
+    z-index: 2;
+  }
+  .table-overlay table {
+    width: 100%;
     border-collapse: collapse;
   }
-  thead th {
+  .table-overlay thead tr {
+    height: ${rowHeightMm}mm;
+  }
+  .table-overlay thead th {
     background: #eef0f2;
-    font-size: 16px;
+    font-size: 12px;
     font-weight: 600;
     text-align: center;
-    padding: 2px 4px;
+    padding: 0 4px;
     border: 1px solid #d0d0d0;
     color: #333;
   }
-  tbody td {
-    font-size: 16px;
+  .table-overlay tbody tr {
+    height: ${rowHeightMm}mm;
+  }
+  .table-overlay tbody td {
+    font-size: 12px;
     padding: 0 4px;
     border: 1px solid #d0d0d0;
     vertical-align: middle;
-    line-height: 3.2;
-  }
-
-  /* ---- FOOTER ---- */
-  .footer-divider {
-    height: 3px;
-    background: #5b2d8e;
-    width: 100%;
-    margin-top: auto;
-  }
-  .footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    font-size: 15px;
-    color: #000000ff;
-    background: #fff;
-  }
-  .footer-left {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .footer-right {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 600;
-    color: #000000ff;
   }
 </style>
 </head>
 <body>
 <div class="page">
 
+  <!-- TEMPLATE BACKGROUND -->
+  <img class="template-bg" src="${logos.defaultTemplate}" alt="">
+
+  <!-- WHITE STRIP behind table -->
+  <div class="table-strip"></div>
+
   <!-- WATERMARK -->
   <div class="watermark">
     <img src="${logos.watermark}" alt="">
   </div>
 
-  <!-- HEADER -->
-  <div class="header">
-    <div class="header-left">
-      <div class="logo-r"><img src="${logos.headerLeft}" alt="REC"></div>
-    </div>
-    <div class="header-title">
-      <h1>AWS Student Builder Group REC</h1>
-      <h2>RAJALAKSHMI ENGINEERING COLLEGE</h2>
-    </div>
-    <div class="logo-aws">
-      <img src="${logos.headerRight}" alt="AWS">
-    </div>
-  </div>
-
-  <div class="divider"></div>
-  <br>
-  <!-- PARTICIPANTS HEADING -->
-  <div class="participants-heading">PARTICIPANTS</div>
-  <br>
   <!-- TABLE -->
-  <div class="table-wrapper">
+  <div class="table-overlay">
     <table>
       <thead>
         <tr>
-          <th>S.NO</th>
-          <th>ROLL NUMBER</th>
-          <th>NAME</th>
-          <th>YEAR</th>
-          <th>DEPT</th>
+          <th style="width:${colW[0]}%">S.NO</th>
+          <th style="width:${colW[1]}%">ROLL NUMBER</th>
+          <th style="width:${colW[2]}%">NAME</th>
+          <th style="width:${colW[3]}%">YEAR</th>
+          <th style="width:${colW[4]}%">DEPT</th>
         </tr>
       </thead>
       <tbody>
         ${buildTableRows(participants)}
       </tbody>
     </table>
-  </div>
-
-  <!-- FOOTER -->
-  <div class="footer-divider"></div>
-  <div class="footer">
-    <div class="footer-left">
-      <img src="${logos.footerLeft}" alt="email" style="width:20px;height:20px;">
-      <span>awscloudclub@rajalakshmi.edu.in</span>
-    </div>
-    <div class="footer-right">
-      <img src="${logos.footerRight}" alt="AWS" style="width:20px;height:20px;">
-      <span>AWS Student Builder Group</span>
-    </div>
   </div>
 
 </div>

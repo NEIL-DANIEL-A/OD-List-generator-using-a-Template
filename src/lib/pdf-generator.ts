@@ -16,15 +16,18 @@ async function loadLogoDataUri(filename: string): Promise<string> {
   return `data:image/svg+xml;base64,${Buffer.from(content).toString("base64")}`;
 }
 
+async function loadPngDataUri(filename: string): Promise<string> {
+  const filepath = join(process.cwd(), "public", filename);
+  const content = await readFile(filepath);
+  return `data:image/png;base64,${content.toString("base64")}`;
+}
+
 async function loadLogos(): Promise<TemplateLogos> {
-  const [headerLeft, headerRight, footerLeft, footerRight, watermark] = await Promise.all([
-    loadLogoDataUri("cropped-rec purple.svg"),
+  const [watermark, defaultTemplate] = await Promise.all([
     loadLogoDataUri("sbg_logo.svg"),
-    loadLogoDataUri("email.svg"),
-    loadLogoDataUri("sbg_logo.svg"),
-    loadLogoDataUri("sbg_logo.svg"),
+    loadPngDataUri("attendance_template.png"),
   ]);
-  return { headerLeft, headerRight, footerLeft, footerRight, watermark };
+  return { headerLeft: "", headerRight: "", footerLeft: "", footerRight: "", watermark, defaultTemplate };
 }
 
 export async function generateAttendancePdf(
@@ -55,7 +58,7 @@ export async function generateAttendancePdf(
       if (useCustomTemplate) {
         allHtmlPages.push(buildCustomTemplateHtml(pageParticipants, templateImage, templateConfig, rowsPerPage, logos.watermark));
       } else {
-        allHtmlPages.push(buildAttendanceHtml(pageParticipants, logos));
+        allHtmlPages.push(buildAttendanceHtml(pageParticipants, logos, templateConfig));
       }
     }
 

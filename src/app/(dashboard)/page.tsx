@@ -35,7 +35,8 @@ const COLUMN_HEADERS = ["S.NO", "ROLL NUMBER", "NAME", "YEAR", "DEPT"];
 export default function CalibrationPage() {
   const [templateImage, setTemplateImage] = useState<string | null>(null);
   const [templateFileName, setTemplateFileName] = useState<string>("");
-  const [config, setConfig] = useState<TemplateConfig>({ tableX: 40, tableY: 200, tableWidth: 714, rowHeight: 30, columnWidths: [6, 18, 42, 14, 20], rowsPerPage: 17 });
+  const [defaultTemplate, setDefaultTemplate] = useState<string | null>(null);
+  const [config, setConfig] = useState<TemplateConfig>({ tableX: 40, tableY: 200, tableWidth: 714, rowHeight: 47, columnWidths: [6, 18, 42, 14, 20], rowsPerPage: 17 });
   const [participants, setParticipants] = useState<Participant[]>(SAMPLE_PARTICIPANTS);
   const [excelFileName, setExcelFileName] = useState<string>("");
   const [parsing, setParsing] = useState(false);
@@ -47,6 +48,17 @@ export default function CalibrationPage() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    fetch("/attendance_template.png")
+      .then((res) => res.blob())
+      .then((blob) => {
+        const reader = new FileReader();
+        reader.onload = () => setDefaultTemplate(reader.result as string);
+        reader.readAsDataURL(blob);
+      })
+      .catch(() => {});
+  }, []);
 
   const scale = zoom;
 
@@ -155,7 +167,7 @@ export default function CalibrationPage() {
   }
 
   function resetConfig() {
-    setConfig({ tableX: 40, tableY: 200, tableWidth: 714, rowHeight: 30, columnWidths: [6, 18, 42, 14, 20], rowsPerPage: 17 });
+    setConfig({ tableX: 39, tableY: 201, tableWidth: 714, rowHeight: 47, columnWidths: [6, 18, 42, 14, 20], rowsPerPage: 17 });
   }
 
   function saveConfig() {
@@ -200,10 +212,9 @@ export default function CalibrationPage() {
   async function generatePreview() {
     setGenerating(true);
     try {
-      const body: Record<string, unknown> = { participants, rowCount: config.rowsPerPage };
+      const body: Record<string, unknown> = { participants, rowCount: config.rowsPerPage, templateConfig: config };
       if (templateImage) {
         body.templateImage = templateImage;
-        body.templateConfig = config;
       }
 
       const res = await fetch("/api/calibration-preview", {
@@ -414,8 +425,8 @@ export default function CalibrationPage() {
                 minHeight: A4_HEIGHT_PX * zoom,
               }}
             >
-              {templateImage && (
-                <img src={templateImage} alt="" className="absolute inset-0 pointer-events-none" style={{ width: "100%", height: "100%", objectFit: "fill" }} />
+              {(templateImage || defaultTemplate) && (
+                <img src={templateImage || defaultTemplate || ""} alt="" className="absolute inset-0 pointer-events-none" style={{ width: "100%", height: "100%", objectFit: "fill" }} />
               )}
               <svg className="absolute inset-0 pointer-events-none" style={{ width: "100%", height: "100%" }}>
                 {Array.from({ length: Math.floor(A4_WIDTH_PX / 50) + 1 }, (_, i) => (
